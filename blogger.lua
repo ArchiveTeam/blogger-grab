@@ -403,7 +403,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       check(url .. "?m=1")
     end
     if string.match(url, "^https?://[^/]+/robots.txt$")
-      and not string.match(html, "Sitemap:%s+https?://[^/]+%.blogspot%.com/sitemap%.xml") then
+      and not string.match(html, "Sitemap:%s+https?://[^/]+/sitemap%.xml") then
       error("Could not find sitemap in robots.txt.")
     end
     for newurl in string.gmatch(string.gsub(html, "&quot;", '"'), '([^"]+)') do
