@@ -163,6 +163,7 @@ allowed = function(url, parenturl)
     or string.match(url, "^https?://[^/]+/b/stats%?")
     or string.match(url, "[\"']%s*%+%s*[a-zA-Z0-9_%[%]%-_%.]+%s*%+%s*[\"']")
     or string.match(url, "\\")
+    or string.match(url, "%s")
     or string.match(url, "%%url%%")
     or string.match(url, "/search.*[%?&]reverse%-paginate=") then
     return false
