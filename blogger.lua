@@ -588,7 +588,7 @@ wget.callbacks.finish = function(start_time, end_time, wall_time, numurls, total
         items = items .. "\0" .. item
       end
       count = count + 1
-      if count == 100 then
+      if count == 500 then
         submit_backfeed(items, key)
         items = nil
         count = 0
