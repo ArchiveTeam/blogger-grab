@@ -153,7 +153,6 @@ allowed = function(url, parenturl)
   if item_type == "blog"
     and (
       string.match(url, "^https://[^/]+%.blogspot%.com/feeds/")
-      or string.match(url, "search%?updated%-max")
     ) then
     return false
   end
