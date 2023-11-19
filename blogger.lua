@@ -146,7 +146,15 @@ allowed = function(url, parenturl)
   if not string.match(url, "^https?://[^/]")
     or string.match(url, "^https?://[^/]+/%*")
     or string.match(url, "^https?://[^/]+/b/stats%?")
-    or string.match(url, "'%+[a-z_]+%+'") then
+    or string.match(url, "'%+[a-z_%[%]]+%+'") then
+    return false
+  end
+
+  if item_type == "blog"
+    and (
+      string.match(url, "^https://[^/]+%.blogspot%.com/feeds/")
+      or string.match(url, "search%?updated%-max")
+    ) then
     return false
   end
 
@@ -330,21 +338,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   end
 
-  local function flatten_json(json)
-    local result = ""
-    for k, v in pairs(json) do
-      result = result .. " " .. k
-      local type_v = type(v)
-      if type_v == "string" then
-        v = string.gsub(v, "\\", "")
-        result = result .. " " .. v .. ' "' .. v .. '"'
-      elseif type_v == "table" then
-        result = result .. " " .. flatten_json(v)
-      end
-    end
-    return result
-  end
-
   if allowed(url)
     and status_code < 300
     and item_type ~= "url" then
@@ -430,6 +423,7 @@ wget.callbacks.write_to_warc = function(url, http_stat)
     return false
   end
   if http_stat["statcode"] ~= 200
+    and http_stat["statcode"] ~= 400
     and http_stat["statcode"] ~= 404 then
     retry_url = true
     return false
@@ -528,7 +522,7 @@ wget.callbacks.finish = function(start_time, end_time, wall_time, numurls, total
         "https://legacy-api.arpa.li/backfeed/legacy/" .. key,
         items .. "\0"
       )
-      if code == 200 and body ~= nil and JSON:decode(body)["status_code"] == 200 then
+      if code == 200 and body ~= nil and cjson.decode(body)["status_code"] == 200 then
         io.stdout:write(string.match(body, "^(.-)%s*$") .. "\n")
         io.stdout:flush()
         return nil
