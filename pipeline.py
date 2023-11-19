@@ -72,7 +72,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20231119.02'
+VERSION = '20231119.03'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
 TRACKER_ID = 'blogger'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -334,8 +334,8 @@ project = Project(
     title=TRACKER_ID,
     project_html='''
         <img class="project-logo" alt="Project logo" src="https://wiki.archiveteam.org/images/thumb/2/2e/Blogger-icon.png/603px-Blogger-icon.png" height="50px" title=""/>
-        <h2>ЯRUS <span class="links"><a href="https://blogger.com/">Website</a> &middot; <a href="http://tracker.archiveteam.org/blogger/">Leaderboard</a> &middot; <a href="https://wiki.archiveteam.org/index.php/ЯRUS">Wiki</a></span></h2>
-        <p>Archiving ЯRUS.</p>
+        <h2>Blogger <span class="links"><a href="https://blogger.com/">Website</a> &middot; <a href="http://tracker.archiveteam.org/blogger/">Leaderboard</a> &middot; <a href="https://wiki.archiveteam.org/index.php/Blogger">Wiki</a></span></h2>
+        <p>Archiving Blogger.</p>
     '''
 )
 
