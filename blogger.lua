@@ -24,7 +24,6 @@ local addedtolist = {}
 local abortgrab = false
 local killgrab = false
 local logged_response = false
-local found_new_post = false
 
 local discovered_outlinks = {}
 local discovered_items = {}
@@ -69,6 +68,7 @@ processed = function(url)
 end
 
 discover_item = function(target, item)
+  item = percent_encode(item)
   if not target[item] then
 --print('discovered', item)
     target[item] = true
@@ -90,6 +90,10 @@ find_item = function(url)
   end
   if not value then
     blog, value = string.match(url, "^https?://([^/]+)%.blogspot%.com/(search/label/[^%?&;]+)$")
+    type_ = "search"
+  end
+  if not value then
+    blog, value = string.match(url, "^https?://([^/]+)%.blogspot%.com/(search.*[%?&]updated%-max=.+)$")
     type_ = "search"
   end
   if not value then
@@ -127,7 +131,6 @@ set_item = function(url)
     if item_name_new ~= item_name then
       ids = {}
       ids[found["value"]] = true
-      found_new_post = false
       abortgrab = false
       initial_allowed = false
       tries = 0
@@ -138,6 +141,18 @@ set_item = function(url)
   end
 end
 
+percent_encode = function(s)
+  result = ""
+  for c in string.gmatch(s, "(.)") do
+    local b = string.byte(c)
+    if b < 32 or b > 126 then
+      c = string.format("%%%02X", b)
+    end
+    result = result .. c
+  end
+  return result
+end
+
 allowed = function(url, parenturl)
   if ids[url] then
     return true
@@ -146,7 +161,17 @@ allowed = function(url, parenturl)
   if not string.match(url, "^https?://[^/]")
     or string.match(url, "^https?://[^/]+/%*")
     or string.match(url, "^https?://[^/]+/b/stats%?")
-    or string.match(url, "'%+[a-z_%[%]]+%+'") then
+    or string.match(url, "[\"']%s*%+%s*[a-zA-Z0-9_%[%]%-_%.]+%s*%+%s*[\"']")
+    or string.match(url, "\\")
+    or string.match(url, "%%url%%")
+    or string.match(url, "/search.*[%?&]reverse%-paginate=") then
+    return false
+  end
+
+  if parenturl
+    and string.match(url, "/search.*[%?&]updated%-max=")
+    and not string.match(parenturl, "^https?://[^/]+/$")
+    and not string.match(parenturl, "^https?://[^/]+/search%?") then
     return false
   end
 
@@ -171,6 +196,7 @@ allowed = function(url, parenturl)
     ["^https?://[^/]+%.blogspot%.com/([0-9][0-9][0-9][0-9]/[01][0-9]/.+%.html)"]="article",
     ["^https?://[^/]+%.blogspot%.com/(p/.+%.html)"]="page",
     ["^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)"]="search",
+    ["^https?://[^/]+%.blogspot%.com/(search.*[%?&]updated%-max=.+)$"]="search"
   }) do
     match = string.match(url, pattern)
     if match then
@@ -178,16 +204,8 @@ allowed = function(url, parenturl)
       if type_ == "article" or type_ == "page" or type_ == "search" then
         new_item = type_ .. ":" .. url_blog .. ":" .. match
       end
-      if item_type == "blog"
-        and type_ == "article"
-        and url_blog == item_value
-        and tonumber(string.match(match, "^([0-9]+)")) > 2021 then
-        found_new_post = true
-      end
       if new_item ~= item_name then
-        if not found_new_post then
-          discover_item(discovered_items, new_item)
-        end
+        discover_item(discovered_items, new_item)
         if type_ ~= "blog" then
           found = true
         end
@@ -202,7 +220,8 @@ allowed = function(url, parenturl)
     "^https?://(.+)$",
     "^https?://([^/]+)%.blogspot%.com/",
     "^https?://[^/]+%.blogspot%.com/(.+%.html)",
-    "^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)"
+    "^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)",
+    "^https?://[^/]+%.blogspot%.com/(search.*[%?&]updated%-max=.+)$"
   }) do
     local match = string.match(url, pattern)
     if match and ids[match] then
@@ -341,6 +360,11 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     and status_code < 300
     and item_type ~= "url" then
     html = read_file(file)
+    --[[if found_new_post then
+      io.stdout:write("Found new post, skipping blog for now.\n")
+      io.stdout:flush()
+      abort_item()
+    end]]
     if string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
       io.stdout:write("Found dynamicviews blog, skipping blog for now.\n")
       io.stdout:flush()
@@ -360,10 +384,23 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       return urls
     end
     if string.match(url, "^https?://[^/]+%.blogspot%.com/$") then
+      for blog, year, month in string.gmatch(html, "https?://([^/]+)%.blogspot%.com/([0-9][0-9][0-9][0-9])/([01][0-9])/[a-z]") do
+        year = tonumber(year)
+        month = tonumber(month)
+        if blog == item_value
+          and month > 0 and month <= 12
+          and year >= 2022 and year < 2024 then
+          io.stdout:write("Found new post, skipping blog for now.\n")
+          io.stdout:flush()
+          abort_item()
+          return {}
+        end
+      end
       check(url .. "robots.txt")
       check(url .. "sitemap.xml")
       check(url .. "favicon.ico")
-      check(url .. "/atom.xml?redirect=false&max-results=")
+      check(url .. "atom.xml?redirect=false&max-results=")
+      check(url .. "?m=1")
     end
     if string.match(url, "^https?://[^/]+/robots.txt$")
       and not string.match(html, "Sitemap:%s+https?://[^/]+%.blogspot%.com/sitemap%.xml") then
@@ -388,11 +425,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     html = string.gsub(html, "&lt;", "<")
     for newurl in string.gmatch(html, ">%s*([^<%s]+)") do
       checknewurl(newurl)
-    end
-    if found_new_post then
-      io.stdout:write("Found new post, skipping blog for now.\n")
-      io.stdout:flush()
-      abort_item()
     end
   end
 
