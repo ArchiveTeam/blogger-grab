@@ -349,6 +349,24 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     and status_code < 300
     and item_type ~= "url" then
     html = read_file(file)
+    if string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
+      io.stdout:write("Found dynamicviews blog, skipping blog for now.\n")
+      io.stdout:flush()
+      abort_item()
+    elseif string.match(html, "[bB][lL][oO][gG][gG][eE][rR]%-video")
+      or string.match(html, "blogger%.com/video") then
+      io.stdout:write("Found a video, skipping item for now.\n")
+      io.stdout:flush()
+      abort_item()
+    elseif string.match(html, "'adultContent':%s*true")
+      or string.match(html, "<meta[^>]+content='adult'") then
+      io.stdout:write("Found an adult blog, skipping for now.\n")
+      io.stdout:flush()
+      abort_item()
+    end
+    if abortgrab then
+      return urls
+    end
     if string.match(url, "^https?://[^/]+%.blogspot%.com/$") then
       check(url .. "robots.txt")
       check(url .. "sitemap.xml")
@@ -381,15 +399,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
     if found_new_post then
       io.stdout:write("Found new post, skipping blog for now.\n")
-      io.stdout:flush()
-      abort_item()
-    elseif string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
-      io.stdout:write("Found dynamicviews blog, skipping blog for now.\n")
-      io.stdout:flush()
-      abort_item()
-    elseif string.match(html, "[bB][lL][oO][gG][gG][eE][rR]%-video")
-      or string.match(html, "blogger%.com/video") then
-      io.stdout:write("Found a video, skipping item for now.\n")
       io.stdout:flush()
       abort_item()
     end
