@@ -165,6 +165,7 @@ allowed = function(url, parenturl)
     or string.match(url, "\\")
     or string.match(url, "%s")
     or string.match(url, "%%url%%")
+    or string.match(url, "%?showComment=")
     or string.match(url, "/search.*[%?&]reverse%-paginate=") then
     return false
   end
