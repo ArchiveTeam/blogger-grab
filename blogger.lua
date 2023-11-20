@@ -165,7 +165,8 @@ allowed = function(url, parenturl)
     or string.match(url, "\\")
     or string.match(url, "%s")
     or string.match(url, "%%url%%")
-    or string.match(url, "%?showComment=")
+    or string.match(url, "[%?&]showComment=")
+    or string.match(url, "[%?&]widgetType=BlogArchive")
     or string.match(url, "/search.*[%?&]reverse%-paginate=") then
     return false
   end
@@ -519,7 +520,7 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   if status_code == 0 or retry_url then
     io.stdout:write("Server returned bad response. ")
     io.stdout:flush()
-    local maxtries = 6
+    local maxtries = 2
     tries = tries + 1
     if tries > maxtries then
       io.stdout:write(" Skipping.\n")
