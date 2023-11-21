@@ -109,6 +109,10 @@ find_item = function(url)
     value = string.match(url, "^https?://([^/]+googleusercontent%.com/.+)$")
     type_ = "url"
   end
+  if not value then
+    value = string.match(url, "^https?://www%.blogger%.com/profile/([0-9]+)$")
+    type_ = "profile"
+  end
   if value then
     return {
       ["blog"]=blog,
@@ -200,7 +204,8 @@ allowed = function(url, parenturl)
     ["^https?://[^/]+%.blogspot%.com/([0-9][0-9][0-9][0-9]/[01][0-9]/.+%.html)"]="article",
     ["^https?://[^/]+%.blogspot%.com/(p/.+%.html)"]="page",
     ["^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)"]="search",
-    ["^https?://[^/]+%.blogspot%.com/(search.*[%?&]updated%-max=.+)$"]="search"
+    ["^https?://[^/]+%.blogspot%.com/(search.*[%?&]updated%-max=.+)$"]="search",
+    ["^https?://[^/]*blogger%.com/profile/([0-9]+)"]="profile"
   }) do
     local match = string.match(url, pattern)
     if match then
@@ -208,6 +213,7 @@ allowed = function(url, parenturl)
       if type_ == "article" or type_ == "page" or type_ == "search" then
         new_item = type_ .. ":" .. url_blog .. ":" .. match
       end
+
       if new_item ~= item_name then
         discover_item(discovered_items, new_item)
         if type_ ~= "blog" then
@@ -222,6 +228,7 @@ allowed = function(url, parenturl)
 
   for _, pattern in pairs({
     "^https?://(.+)$",
+    "([0-9]+)",
     "^https?://([^/]+)%.blogspot%.com/",
     "^https?://[^/]+%.blogspot%.com/(.+%.html)",
     "^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)",

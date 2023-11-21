@@ -77,7 +77,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20231121.05'
+VERSION = '20231121.06'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
 TRACKER_ID = 'blogger'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -323,6 +323,9 @@ class WgetArgs(object):
             elif item_type == 'url':
                 wget_args.extend(['--warc-header', 'blogger-url: '+item_value])
                 wget_args.append('https://'+item_value)
+            elif item_type == 'profile':
+                wget_args.extend(['--warc-header', 'blogger-profile: '+item_value])
+                wget_args.append('https://www.blogger.com/profile/'+item_value)
             elif item_type in ('article', 'page', 'search'):
                 blog, path = item_value.split(':', 1)
                 wget_args.extend(['--warc-header', 'blogger-{}: {}'.format(item_type, path)])
