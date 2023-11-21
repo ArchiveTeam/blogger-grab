@@ -172,7 +172,22 @@ allowed = function(url, parenturl)
     or string.match(url, "%%url%%")
     or string.match(url, "[%?&]showComment=")
     or string.match(url, "[%?&]widgetType=BlogArchive")
-    or string.match(url, "/search.*[%?&]reverse%-paginate=") then
+    or string.match(url, "/search.*[%?&]reverse%-paginate=")
+    or string.match(url, "^https?://[^/]*blogger%.com/comment%.g%?")
+    or string.match(url, "^https?://[^/]*blogger%.com/email%-post%.g%?")
+    or string.match(url, "^https?://[^/]*blogger%.com/post%-edit%.g%?")
+    or string.match(url, "^https?://[^/]*blogger%.com/navbar%.g%?")
+    or string.match(url, "^https?://[^/]*blogger%.com/dyn%-css/authorization%.css%?")
+    or string.match(url, "^https?://[^/]*blogger%.com/feeds/[0-9]+/posts")
+    or string.match(url, "^https?://[^/]*blogger%.com/rearrange%?")
+    or (
+      parenturl
+      and not string.match(parenturl, "^https?://[^/]+/$")
+      and not string.match(parenturl, "^https?://accounts%.google%.com/ServiceLogin")
+      and string.match(parenturl, "^https?://(.+)$") ~= string.match(url, "^https?://(.+)$")
+      and not string.match(url, "follower[iI][dD]")
+      and string.match(url, "^https?://[^/]*blogger%.com/[^%.]+%.g%?")
+    ) then
     return false
   end
 
@@ -181,6 +196,10 @@ allowed = function(url, parenturl)
     and not string.match(parenturl, "^https?://[^/]+/$")
     and not string.match(parenturl, "^https?://[^/]+/search%?") then
     return false
+  end
+
+  if string.match(url, "^https?://accounts%.google%.com/ServiceLogin%?passive=true&continue=") then
+    return true
   end
 
   if item_type == "blog"
@@ -205,7 +224,8 @@ allowed = function(url, parenturl)
     ["^https?://[^/]+%.blogspot%.com/(p/.+%.html)"]="page",
     ["^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)"]="search",
     ["^https?://[^/]+%.blogspot%.com/(search.*[%?&]updated%-max=.+)$"]="search",
-    ["^https?://[^/]*blogger%.com/profile/([0-9]+)"]="profile"
+    ["^https?://[^/]*blogger%.com/profile/([0-9]+)"]="profile",
+    ["[%?&]follower[iI][dD]=([0-9]+)"]="profile"
   }) do
     local match = string.match(url, pattern)
     if match then
@@ -273,6 +293,12 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   local function decode_codepoint(newurl)
     newurl = string.gsub(
       newurl, "\\[uU]([0-9a-fA-F][0-9a-fA-F][0-9a-fA-F][0-9a-fA-F])",
+      function (s)
+        return utf8.char(tonumber(s, 16))
+      end
+    )
+    newurl = string.gsub(
+      newurl, "\\[xX]([0-9a-fA-F][0-9a-fA-F])",
       function (s)
         return utf8.char(tonumber(s, 16))
       end
@@ -412,6 +438,16 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       check(url .. "favicon.ico")
       check(url .. "atom.xml?redirect=false&max-results=")
       check(url .. "?m=1")
+      local data = string.match(html, "_WidgetManager%._SetDataContext%((%[{.-}%])%);")
+      if data then
+        local blog_id = string.match(data, "'blogId'%s*:%s*'([0-9]+)'")
+        ids[blog_id] = true
+      end
+      --[[for _, d in cjson.decode(data) do
+        if d['name'] == 'blog' then
+          ids[d['data']['blogId'] ] = true
+        end
+      end]]
     end
     --[[if string.match(url, "^https?://[^/]+/robots.txt$")
       and not string.match(html, "Sitemap:%s+https?://[^/]+/sitemap%.xml") then
@@ -464,7 +500,14 @@ wget.callbacks.write_to_warc = function(url, http_stat)
     abort_item()
     return false
   end
+  if http_stat["statcode"] == 302
+    and not string.match(url["url"], "^https?://[^/]*blogger%.com/[^%.]+%.g%?")
+    and not string.match(url["url"], "^https?://accounts%.google%.com/ServiceLogin%?passive=true&continue=") then
+    retry_url = true
+    return false
+  end
   if http_stat["statcode"] ~= 200
+    and http_stat["statcode"] ~= 302
     and http_stat["statcode"] ~= 400
     and http_stat["statcode"] ~= 404 then
     retry_url = true
