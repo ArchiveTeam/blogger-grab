@@ -577,7 +577,7 @@ wget.callbacks.finish = function(start_time, end_time, wall_time, numurls, total
   end
   file:close()
   for key, data in pairs({
-    ["urls-mqnr9hdp6vxru10b"] = discovered_outlinks,
+    ["urls-stash-blogger-ixcw2e3rotlitrgx"] = discovered_outlinks,
     ["blogger-wdpx1qiufiyqbv7s"] = discovered_items,
   }) do
     print('queuing for', string.match(key, "^(.+)%-"))
