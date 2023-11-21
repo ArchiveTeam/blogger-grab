@@ -18,6 +18,11 @@ import time
 import string
 import re
 
+if sys.version_info[0] < 3:
+    from urllib import unquote
+else:
+    from urllib.parse import unquote
+
 import seesaw
 from seesaw.externalprocess import WgetDownload
 from seesaw.pipeline import Pipeline
@@ -72,7 +77,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20231121.02'
+VERSION = '20231121.03'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
 TRACKER_ID = 'blogger'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -157,6 +162,17 @@ class MoveFiles(SimpleTask):
         shutil.rmtree('%(item_dir)s' % item)
 
 
+def normalize_item(url):
+    while True:
+        temp = unquote(url).strip().lower()
+        if temp == url:
+            break
+        url = temp
+    if url.count('/') < 3:
+        url += '/'
+    return url
+
+
 class SetBadUrls(SimpleTask):
     def __init__(self):
         SimpleTask.__init__(self, 'SetBadUrls')
@@ -164,10 +180,10 @@ class SetBadUrls(SimpleTask):
     def process(self, item):
         item['item_name_original'] = item['item_name']
         items = item['item_name'].split('\0')
-        items_lower = [s.lower() for s in items]
+        items_lower = [normalize_item(s) for s in items]
         with open('%(item_dir)s/%(warc_file_base)s_bad-items.txt' % item, 'r') as f:
             for aborted_item in f:
-                aborted_item = aborted_item.strip().lower()
+                aborted_item = normalize_item(aborted_item)
                 index = items_lower.index(aborted_item)
                 item.log_output('Item {} is aborted.'.format(aborted_item))
                 items.pop(index)
