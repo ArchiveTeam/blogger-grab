@@ -486,7 +486,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
           or string.match(s, "class='topmenu")
           or string.match(s, "class='widget Label")
         ) and not finding_end then
-          print('Found start of a sidebar or footer.')
+          --print('Found start of a sidebar or footer.')
           count = count + 1
           finding_end = true
           return s .. separator
@@ -497,7 +497,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
             count = count + 1
           end
           if count == 0 then
-            print('Found end of sidebar or footer.')
+            --print('Found end of sidebar or footer.')
             done = true
             finding_end = false
             return separator .. s
