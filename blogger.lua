@@ -478,7 +478,6 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
           or string.match(s, "class='widget Label")
         ) and not finding_end then
           print('Found start of a sidebar or footer.')
-          print(s)
           count = count + 1
           finding_end = true
           return s .. separator
