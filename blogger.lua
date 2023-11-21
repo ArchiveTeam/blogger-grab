@@ -454,6 +454,51 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       and not string.match(html, "Sitemap:%s+https?://[^/]+/sitemap%.xml") then
       error("Could not find sitemap in robots.txt.")
     end]]
+    if (item_type == "article" or item_type == "search" or item_type == "page")
+      and (
+        string.match(html, "<div%s+[^>]*class='sidebar")
+        or string.match(html, "<div%s+[^>]*id='sidebar")
+        or string.match(html, "<div%s+[^>]*class='footer")
+        or string.match(html, "<div%s+[^>]*id='footer")
+        or string.match(html, "<div%s+[^>]*class='menu")
+        or string.match(html, "<div%s+[^>]*class='topmenu")
+        or string.match(html, "<div%s+[^>]*class='widget Label")
+      ) then
+      local separator = "\0\0"
+      local count = 0
+      local finding_end = false
+      html = string.gsub(html, "(<%s*/?%s*div([^>]*)>)", function (s)
+        if (
+          string.match(s, "class='sidebar")
+          or string.match(s, "id='sidebar")
+          or string.match(s, "class='footer")
+          or string.match(s, "id='footer")
+          or string.match(s, "class='menu")
+          or string.match(s, "class='topmenu")
+          or string.match(s, "class='widget Label")
+        ) and not finding_end then
+          print('Found start of a sidebar or footer.')
+          print(s)
+          count = count + 1
+          finding_end = true
+          return s .. separator
+        elseif count > 0 then
+          if string.match(s, "^<%s*/%s*div") then
+            count = count - 1
+          else
+            count = count + 1
+          end
+          if count == 0 then
+            print('Found end of sidebar or footer.')
+            done = true
+            finding_end = false
+            return separator .. s
+          end
+        end
+        return s
+      end)
+      html = string.gsub(html, "%z%z.-%z%z", "")
+    end
     for newurl in string.gmatch(string.gsub(html, "&quot;", '"'), '([^"]+)') do
       checknewurl(newurl)
     end
