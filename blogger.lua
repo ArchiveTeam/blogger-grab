@@ -308,7 +308,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
   end
 
   local function fix_case(newurl)
-    if not string.match(newurl, "^https?://.") then
+    if not string.match(newurl, "^https?://[^/]") then
       return newurl
     end
     if string.match(newurl, "^https?://[^/]+$") then
