@@ -80,6 +80,7 @@ end
 find_item = function(url)
   local value = string.match(url, "^https?://([^/]+)%.blogspot%.com/$")
   local type_ = "blog"
+  local blog = nil
   if not value then
     blog, value = string.match(url, "^https?://([^/]+)%.blogspot%.com/([0-9][0-9][0-9][0-9]/[01][0-9]/.+%.html)$")
     type_ = "article"
@@ -142,7 +143,7 @@ set_item = function(url)
 end
 
 percent_encode = function(s)
-  result = ""
+  local result = ""
   for c in string.gmatch(s, "(.)") do
     local b = string.byte(c)
     if b < 32 or b > 126 then
@@ -201,7 +202,7 @@ allowed = function(url, parenturl)
     ["^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)"]="search",
     ["^https?://[^/]+%.blogspot%.com/(search.*[%?&]updated%-max=.+)$"]="search"
   }) do
-    match = string.match(url, pattern)
+    local match = string.match(url, pattern)
     if match then
       local new_item = type_ .. ":" .. match
       if type_ == "article" or type_ == "page" or type_ == "search" then
