@@ -442,13 +442,13 @@ end
 wget.callbacks.write_to_warc = function(url, http_stat)
   status_code = http_stat["statcode"]
   set_item(url["url"])
+  if not item_name then
+    error("No item name found.")
+  end
   url_count = url_count + 1
   io.stdout:write(url_count .. "=" .. status_code .. " " .. url["url"] .. " \n")
   io.stdout:flush()
   logged_response = true
-  if not item_name then
-    error("No item name found.")
-  end
   if http_stat["statcode"] >= 300
     and http_stat["statcode"] < 400
     and item_type == "blog"
@@ -490,13 +490,13 @@ wget.callbacks.httploop_result = function(url, err, http_stat)
   end
   logged_response = false
 
-  if killgrab then
-    return wget.actions.ABORT
-  end
-
   set_item(url["url"])
   if not item_name then
     error("No item name found.")
+  end
+
+  if killgrab then
+    return wget.actions.ABORT
   end
 
   if status_code >= 300 and status_code <= 399 then
