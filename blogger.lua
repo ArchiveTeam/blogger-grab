@@ -591,7 +591,7 @@ wget.callbacks.finish = function(start_time, end_time, wall_time, numurls, total
     local items = nil
     local count = 0
     for item, _ in pairs(data) do
-      print("found item", item)
+      --print("found item", item)
       if items == nil then
         items = item
       else
