@@ -172,6 +172,7 @@ allowed = function(url, parenturl)
     or string.match(url, "/////")
     or string.match(url, "%%url%%")
     or string.match(url, "%?m=0$")
+    or string.match(url, "%.htmlfeeds/posts/")
     or string.match(url, "[%?&]showComment=")
     or string.match(url, "[%?&]widgetType=BlogArchive")
     or string.match(url, "[%?&]m%%3D1[%?&]m%%3D1")
@@ -188,6 +189,8 @@ allowed = function(url, parenturl)
     or string.match(url, "^https?://[^/]*blogger%.com/dyn%-css/authorization%.css%?")
     or string.match(url, "^https?://[^/]*blogger%.com/feeds/[0-9]+/posts")
     or string.match(url, "^https?://[^/]*blogger%.com/rearrange%?")
+    or string.match(url, "^https?://[^/]+/search/label/.*/ss?earch/")
+    or string.match(url, "^https?://[^/]+/search/label/.*/label/")
     or (
       parenturl
       and not string.match(parenturl, "^https?://[^/]+/$")
@@ -227,15 +230,15 @@ allowed = function(url, parenturl)
     ["^https?://(bp%.blogspot%.com/.+)$"]="url",
     ["^https?://([^/]+%.bp%.blogspot%.com/.+)$"]="url",
     ["^https?://([^/]+googleusercontent%.com/.+)$"]="url",
-    ["^https?://([^/%.]+)%.blogspot%.com/"]="blog",
-    ["^https?://([^/%.]+)%.blogger%.com/"]="blog",
-    ["^https?://[^/]+%.blogspot%.com/([0-9][0-9][0-9][0-9]/[01][0-9]/.+%.html)"]="article",
-    ["^https?://[^/]+%.blogger%.com/([0-9][0-9][0-9][0-9]/[01][0-9]/.+%.html)"]="article",
-    ["^https?://[^/]+%.blogspot%.com/(p/.+%.html)"]="page",
-    ["^https?://[^/]+%.blogger%.com/(p/.+%.html)"]="page",
-    ["^https?://[^/]+%.blogspot%.com/(search/label/[^%?&;]+)"]="search",
-    ["^https?://[^/]+%.blogspot%.com/(search.*[%?&]updated%-max=.+)$"]="search",
-    ["^https?://[^/]*blogger%.com/profile/([0-9]+)"]="profile",
+    ["^https?://([^/%.]+)%.blogspot%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/"]="blog",
+    ["^https?://([^/%.]+)%.blogger%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/"]="blog",
+    ["^https?://[^/]+%.blogspot%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/([0-9][0-9][0-9][0-9]/[01][0-9]/.+%.html)"]="article",
+    ["^https?://[^/]+%.blogger%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/([0-9][0-9][0-9][0-9]/[01][0-9]/.+%.html)"]="article",
+    ["^https?://[^/]+%.blogspot%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/(p/.+%.html)"]="page",
+    ["^https?://[^/]+%.blogger%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/(p/.+%.html)"]="page",
+    ["^https?://[^/]+%.blogspot%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/(search/label/[^%?&;]+)"]="search",
+    ["^https?://[^/]+%.blogspot%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/(search.*[%?&]updated%-max=.+)$"]="search",
+    ["^https?://[^/]*blogger%.[a-z][a-z][a-z]?%.?[a-z]?[a-z]?/profile/([0-9]+)"]="profile",
     ["[%?&]follower[iI][dD]=([0-9]+)"]="profile"
   }) do
     local match = string.match(url, pattern)
