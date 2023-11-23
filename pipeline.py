@@ -77,7 +77,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20231123.01'
+VERSION = '20231123.02'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
 TRACKER_ID = 'blogger'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -271,7 +271,6 @@ class WgetArgs(object):
             '--dns-servers', '9.9.9.10,149.112.112.10,2620:fe::10,2620:fe::fe:10',
             '--load-cookies', 'cookies.txt',
             '--content-on-error',
-            '--no-http-keep-alive',
             '--lua-script', 'blogger.lua',
             '-o', ItemInterpolation('%(item_dir)s/wget.log'),
             '--no-check-certificate',
@@ -282,11 +281,11 @@ class WgetArgs(object):
             '--recursive', '--level=inf',
             '--no-parent',
             '--page-requisites',
-            '--timeout', '30',
+            '--timeout', '4',
             '--tries', 'inf',
             '--domains', 'blogspot.com,blogger.com',
             '--span-hosts',
-            '--waitretry', '30',
+            '--waitretry', '4',
             '--warc-file', ItemInterpolation('%(item_dir)s/%(warc_file_base)s'),
             '--warc-header', 'operator: Archive Team',
             '--warc-header', 'x-wget-at-project-version: ' + VERSION,
