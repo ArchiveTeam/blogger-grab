@@ -224,7 +224,10 @@ allowed = function(url, parenturl)
     url = url .. "/"
   end
 
-  local url_blog = string.match(url, "^https?://([^/]+)%.blogspot%.com/")
+  local url_blog, url_tld = string.match(url, "^https?://([^/]+)%.blogspot%.([a-z][a-z][a-z]?%.?[a-z]?[a-z]?)/")
+  if not url_blog then
+    url_blog, url_tld = string.match(url, "^https?://([^/]+)%.blogger%.([a-z][a-z][a-z]?%.?[a-z]?[a-z]?)/")
+  end
   local found = false
   for pattern, type_ in pairs({
     ["^https?://(bp%.blogspot%.com/.+)$"]="url",
@@ -247,10 +250,10 @@ allowed = function(url, parenturl)
       if type_ == "article" or type_ == "page" or type_ == "search" then
         new_item = type_ .. ":" .. url_blog .. ":" .. match
       end
-
       if new_item ~= item_name then
         discover_item(discovered_items, new_item)
-        if type_ ~= "blog" then
+        if type_ ~= "blog"
+          and not (url_blog and type_ ~= "url" and url_tld ~= "com") then
           found = true
         end
       end
