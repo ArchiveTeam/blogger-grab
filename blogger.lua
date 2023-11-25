@@ -178,6 +178,7 @@ allowed = function(url, parenturl)
     or string.match(url, "[%?&]m%%3D1[%?&]m%%3D1")
     or string.match(url, "%?en%-[a-z][a-z]$")
     or string.match(url, "/search/label/.+searchsearchsearch$")
+    or string.match(url, "/search.*/.*/.*/.*/")
     or (
       string.match(url, "/search/?%?q=")
       and not string.match(url, "updated%-max=")
