@@ -293,10 +293,12 @@ wget.callbacks.download_child_p = function(urlpos, parent, depth, start_url_pars
   local url = urlpos["url"]["url"]
   local html = urlpos["link_expect_html"]
 
-  if allowed(url, parent["url"]) and not processed(url) then
+  --[[local https_url = string.gsub(url, "^http://", "https://")
+
+  if allowed(url, parent["url"]) and not processed(url) and not processed(https_url) then
     addedtolist[url] = true
     return true
-  end
+  end]]
 
   return false
 end
