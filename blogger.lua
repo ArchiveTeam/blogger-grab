@@ -524,10 +524,10 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     for newurl in string.gmatch(string.gsub(html, "&#039;", "'"), "([^']+)") do
       checknewurl(newurl)
     end
-    for newurl in string.gmatch(html, "[^%-]href='([^']+)'") do
+    for newurl in string.gmatch(html, "href='([^']+)'") do
       checknewshorturl(newurl)
     end
-    for newurl in string.gmatch(html, '[^%-]href="([^"]+)"') do
+    for newurl in string.gmatch(html, 'href="([^"]+)"') do
       checknewshorturl(newurl)
     end
     for newurl in string.gmatch(html, ":%s*url%(([^%)]+)%)") do
