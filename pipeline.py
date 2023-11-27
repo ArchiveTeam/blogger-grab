@@ -77,7 +77,7 @@ if not WGET_AT:
 #
 # Update this each time you make a non-cosmetic change.
 # It will be added to the WARC files and reported to the tracker.
-VERSION = '20231127.01'
+VERSION = '20231127.02'
 USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/113.0.0.0 Safari/537.36'
 TRACKER_ID = 'blogger'
 TRACKER_HOST = 'legacy-api.arpa.li'
@@ -96,29 +96,71 @@ class CheckIP(SimpleTask):
         self._counter = 0
 
     def process(self, item):
-        # NEW for 2014! Check if we are behind firewall/proxy
-
         if self._counter <= 0:
-            item.log_output('Checking IP address.')
-            ip_set = set()
+            command = [
+                WGET_AT,
+                '-U', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10.9; rv:63.0) Gecko/20100101 Firefox/63.0',
+                '--host-lookups', 'dns',
+                '--hosts-file', '/dev/null',
+                '--resolvconf-file', 'resolv.conf',
+                '--dns-servers', '9.9.9.10,149.112.112.10,2620:fe::10,2620:fe::fe:10',
+                '--output-document', '-',
+                '--max-redirect', '0',
+                '--save-headers',
+                '--no-check-certificate',
+                '--no-hsts'
+            ]
+            kwargs = {
+                'timeout': 60,
+                'capture_output': True
+            }
 
-            ip_set.add(socket.gethostbyname('twitter.com'))
-            #ip_set.add(socket.gethostbyname('facebook.com'))
-            ip_set.add(socket.gethostbyname('youtube.com'))
-            ip_set.add(socket.gethostbyname('microsoft.com'))
-            ip_set.add(socket.gethostbyname('icanhas.cheezburger.com'))
-            ip_set.add(socket.gethostbyname('archiveteam.org'))
+            url = 'http://legacy-api.arpa.li/now'
+            returned = subprocess.run(
+                command+[url],
+                **kwargs
+            )
+            assert returned.returncode == 0, 'Invalid return code {} on {}.'.format(returned.returncode, url)
+            assert re.match(
+                b'^HTTP/1\\.1 200 OK\r\n'
+                b'Server: openresty\r\n'
+                b'Date: [A-Z][a-z]{2}, [0-9]{2} [A-Z][a-z]{2} 202[0-9] [0-9]{2}:[0-9]{2}:[0-9]{2} GMT\r\n'
+                b'Content-Type: text/plain\r\n'
+                b'Connection: keep-alive\r\n'
+                b'Content-Length: 1[0-9]\r\n'
+                b'Cache-Control: no-store\r\n'
+                b'\r\n'
+                b'[0-9]{10}\\.[0-9]{1,3}$',
+                returned.stdout
+            ), 'Bad stdout on {}, got {}.'.format(url, repr(returned.stdout))
 
-            if len(ip_set) != 5:
-                item.log_output('Got IP addresses: {0}'.format(ip_set))
-                item.log_output(
-                    'Are you behind a firewall/proxy? That is a big no-no!')
-                raise Exception(
-                    'Are you behind a firewall/proxy? That is a big no-no!')
+            actual_time = float(returned.stdout.rsplit(b'\n', 1)[1])
+            local_time = time.time()
+            max_diff = 180
+            diff = abs(actual_time-local_time)
+            assert diff < max_diff, 'Your time {} is more than {} seconds off of {}.'.format(local_time, max_diff, actual_time)
+
+            for url in (
+                'http://domain.invalid/',
+                'http://example.test/',
+                'http://www/',
+                'http://example.test/example',
+                'http://nxdomain.archiveteam.org/'
+            ):
+                returned = subprocess.run(
+                    command+[url],
+                    **kwargs
+                )
+                assert len(returned.stdout) == 0, 'Bad stdout on {}, got {}.'.format(url, repr(returned.stdout))
+                assert (
+                    b'failed: No IPv4/IPv6 addresses for host.\n'
+                    b'wget-at: unable to resolve host address'
+                ) in returned.stderr, 'Bad stderr on {}, got {}.'.format(url, repr(returned.stderr))
+                assert returned.returncode == 4, 'Invalid return code {} on {}.'.format(returned.returncode, url)
 
         # Check only occasionally
         if self._counter <= 0:
-            self._counter = 10
+            self._counter = 50
         else:
             self._counter -= 1
 
@@ -267,7 +309,7 @@ class WgetArgs(object):
             '-nv',
             '--host-lookups', 'dns',
             '--hosts-file', '/dev/null',
-            '--resolvconf-file', '/dev/null',
+            '--resolvconf-file', 'resolv.conf',
             '--dns-servers', '9.9.9.10,149.112.112.10,2620:fe::10,2620:fe::fe:10',
             '--load-cookies', 'cookies.txt',
             '--content-on-error',
