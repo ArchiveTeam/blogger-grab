@@ -77,6 +77,30 @@ discover_item = function(target, item)
   return false
 end
 
+find_path_loop = function(url, max_repetitions)
+  local tested = {}
+  local tempurl = urlparse.unescape(url)
+  tempurl = string.match(tempurl, "^https?://[^/]+(.*)$")
+  if not tempurl then
+    return false
+  end
+  for s in string.gmatch(tempurl, "([^/%?&]+)") do
+    s = string.lower(s)
+    if not tested[s] then
+      if s == "" then
+        tested[s] = -2
+      else
+        tested[s] = 0
+      end
+    end
+    tested[s] = tested[s] + 1
+    if tested[s] == max_repetitions then
+      return true
+    end
+  end
+  return false
+end
+
 find_item = function(url)
   local value = string.match(url, "^https?://([^/]+)%.blogspot%.com/$")
   local type_ = "blog"
@@ -211,6 +235,10 @@ allowed = function(url, parenturl)
     and string.match(url, "/search.*[%?&]updated%-max=")
     and not string.match(parenturl, "^https?://[^/]+/$")
     and not string.match(parenturl, "^https?://[^/]+/search%?") then
+    return false
+  end
+
+  if find_path_loop(url, 4) then
     return false
   end
 
