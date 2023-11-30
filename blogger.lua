@@ -463,11 +463,11 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       io.stdout:write("Found a video, skipping item for now.\n")
       io.stdout:flush()
       abort_item()
-    elseif string.match(html, "'adultContent':%s*true")
+    --[[elseif string.match(html, "'adultContent':%s*true")
       or string.match(html, "<meta[^>]+content='adult'") then
       io.stdout:write("Found an adult blog, skipping for now.\n")
       io.stdout:flush()
-      abort_item()
+      abort_item()]]
     end
     if abortgrab then
       return urls
