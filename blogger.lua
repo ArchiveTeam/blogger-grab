@@ -2,6 +2,7 @@ local urlparse = require("socket.url")
 local http = require("socket.http")
 local cjson = require("cjson")
 local utf8 = require("utf8")
+local date = require("date")
 
 local item_dir = os.getenv("item_dir")
 local warc_file_base = os.getenv("warc_file_base")
@@ -70,7 +71,7 @@ end
 discover_item = function(target, item)
   item = percent_encode(item)
   if not target[item] then
---print('discovered', item)
+---print('discovered', item)
     target[item] = true
     return true
   end
@@ -215,8 +216,14 @@ allowed = function(url, parenturl)
     or string.match(url, "^https?://[^/]*blogger%.com/post%-edit%.g%?")
     or string.match(url, "^https?://[^/]*blogger%.com/navbar%.g%?")
     or string.match(url, "^https?://[^/]*blogger%.com/dyn%-css/authorization%.css%?")
-    or string.match(url, "^https?://[^/]*blogger%.com/feeds/[0-9]+/posts")
-    or string.match(url, "^https?://[^/]*blogger%.com/feeds/[0-9]+/blogs")
+    or (
+      string.match(url, "^https?://[^/]*blogger%.com/feeds/[0-9]+/posts")
+      and not string.match(url, "[%?&]dynamicviews=")
+    )
+    or (
+      string.match(url, "^https?://[^/]*blogger%.com/feeds/[0-9]+/blogs")
+      and not string.match(url, "[%?&]dynamicviews=")
+    )
     or string.match(url, "^https?://[^/]*blogger%.com/rearrange%?")
     or string.match(url, "^https?://[^/]+/search/label/.*/ss?earch/")
     or string.match(url, "^https?://[^/]+/search/label/.*/label/")
@@ -227,6 +234,11 @@ allowed = function(url, parenturl)
       and string.match(parenturl, "^https?://(.+)$") ~= string.match(url, "^https?://(.+)$")
       and not string.match(url, "follower[iI][dD]")
       and string.match(url, "^https?://[^/]*blogger%.com/[^%.]+%.g%?")
+    )
+    or (
+      parenturl
+      and string.match(url, "^https?://[^/]*blogger%.com/feeds/")
+      and string.match(parenturl, "[%?&]dynamicviews=")
     ) then
     return false
   end
@@ -247,9 +259,8 @@ allowed = function(url, parenturl)
   end
 
   if item_type == "blog"
-    and (
-      string.match(url, "^https://[^/]+%.blogspot%.com/feeds/")
-    ) then
+    and string.match(url, "^https://[^/]+%.blogspot%.com/feeds/")
+    and not string.match(url, "[%?&]dynamicviews=") then
     return false
   end
 
@@ -335,6 +346,7 @@ end
 wget.callbacks.get_urls = function(file, url, is_css, iri)
   local urls = {}
   local html = nil
+  local json = nil
   
   downloaded[url] = true
 
@@ -445,6 +457,21 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
     end
   end
 
+  local function flatten_json(json)
+    local result = ""
+    for k, v in pairs(json) do
+      result = result .. " " .. k
+      local type_v = type(v)
+      if type_v == "string" then
+        v = string.gsub(v, "\\", "")
+        result = result .. " " .. v .. ' "' .. v .. '"'
+      elseif type_v == "table" then
+        result = result .. " " .. flatten_json(v)
+      end
+    end
+    return result
+  end
+
   if allowed(url)
     and status_code < 300
     and item_type ~= "url" then
@@ -454,11 +481,11 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       io.stdout:flush()
       abort_item()
     end]]
-    if string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
+    --[[if string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
       io.stdout:write("Found dynamicviews blog, skipping blog for now.\n")
       io.stdout:flush()
       abort_item()
-    elseif string.match(html, "[bB][lL][oO][gG][gG][eE][rR]%-video")
+    else]]if string.match(html, "[bB][lL][oO][gG][gG][eE][rR]%-video")
       or string.match(html, "blogger%.com/video") then
       io.stdout:write("Found a video, skipping item for now.\n")
       io.stdout:flush()
@@ -485,6 +512,11 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
           return {}
         end
       end
+      if string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
+        check(url .. "feeds/posts/default?alt=json&v=2&dynamicviews=1&orderby=published&max-results=25&rewriteforssl=true")
+        check(url .. "feeds/pages/default?alt=json&v=2&dynamicviews=1&orderby=published&max-results=25&rewriteforssl=true")
+        check(url .. "feeds/pages/default?alt=json&v=2&dynamicviews=1")
+      end
       check(url .. "robots.txt")
       check(url .. "sitemap.xml")
       check(url .. "favicon.ico")
@@ -500,6 +532,40 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
           ids[d['data']['blogId'] ] = true
         end
       end]]
+    end
+    if string.match(url, "/feeds/posts/default%?.*dynamicviews") then
+      json = cjson.decode(html)
+      if json["feed"]["entry"] then
+        local latest_published = nil
+        for _, data in pairs(json["feed"]["entry"]) do
+          latest_published = data["published"]["$t"]
+        end
+        if latest_published then
+          local published_max = date(latest_published)
+          published_max:addseconds(-1)
+          local newurl = string.gsub(url, "([%?&]published%-max=)[^&]+", "%1" .. published_max:fmt("%Y%%-%m%%-%dT%H%%%%3A%M%%%%3A%SZ"))
+          if newurl == url then
+            newurl = url .. "&published-max=" .. published_max:fmt("%Y-%m-%dT%H%3A%M%3A%SZ")
+          end
+          check(newurl)
+        end
+      end
+    end
+    if string.match(url, "dynamicviews") and string.match(html, "^{") then
+      if not json then
+        json = cjson.decode(html)
+      end
+      html = html .. " " .. flatten_json(json)
+    end
+    if item_type == "article"
+      and string.match(url, "^https?://[^/]+/[0-9][0-9][0-9][0-9]/[0-9][0-9]/[^%.]+%.html$")
+      and string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
+      local post_id = string.match(html, '<link rel="alternate"[^>]+href="https?://[^"]+/feeds/([0-9]+)')
+      ids[post_id] = true
+      check(url .. "?dynamicviews=1&v=0")
+      check(url .. "?m=1")
+      check(urlparse.absolute(url, "/feeds/posts/default/" .. post_id .. "?alt=json&v=2&dynamicviews=1&rewriteforssl=true"))
+      check(urlparse.absolute(url, "/feeds/" .. post_id .. "/comments/default?alt=json&v=2&dynamicviews=1&orderby=published&reverse=false&max-results=50&rewriteforssl=true"))
     end
     --[[if string.match(url, "^https?://[^/]+/robots.txt$")
       and not string.match(html, "Sitemap:%s+https?://[^/]+/sitemap%.xml") then
