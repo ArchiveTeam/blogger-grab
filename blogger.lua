@@ -500,7 +500,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
       return urls
     end
     if string.match(url, "^https?://[^/]+%.blogspot%.com/$") then
-      for blog, year, month in string.gmatch(html, "https?://([^/]+)%.blogspot%.com/([0-9][0-9][0-9][0-9])/([01][0-9])/[a-z]") do
+      --[[for blog, year, month in string.gmatch(html, "https?://([^/]+)%.blogspot%.com/([0-9][0-9][0-9][0-9])/([01][0-9])/[a-z]") do
         year = tonumber(year)
         month = tonumber(month)
         if blog == item_value
@@ -511,7 +511,7 @@ wget.callbacks.get_urls = function(file, url, is_css, iri)
           abort_item()
           return {}
         end
-      end
+      end]]
       if string.match(html, "<script src='[^']*blogblog%.com/dynamicviews/") then
         check(url .. "feeds/posts/default?alt=json&v=2&dynamicviews=1&orderby=published&max-results=25&rewriteforssl=true")
         check(url .. "feeds/pages/default?alt=json&v=2&dynamicviews=1&orderby=published&max-results=25&rewriteforssl=true")
